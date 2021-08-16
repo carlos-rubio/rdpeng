@@ -1,25 +1,103 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Course Project 1"
+author: "Carlos Rubio"
+date: "August 16, 2021"
+output: html_document
+keep_md: true
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 ## Loading and preprocessing the data
 
+Read and show summary of the data:
 
+```{r}
+data <- read.csv(file = 'activity.csv')
+summary(data)
+```
+
+Histogram of number of steps per day
+
+```{r}
+groupedPerDay <- aggregate(data$steps, by=list(date=data$date), FUN=sum)
+hist(groupedPerDay$x, main="Histogram of steps per day", xlab="Steps")
+```
 
 ## What is mean total number of steps taken per day?
 
+Mean and median of the total number of steps per day
 
+```{r}
+meanPerDay <- mean(groupedPerDay$x, na.rm=TRUE)
+medianPerDay <- median(groupedPerDay$x, na.rm=TRUE)
+cat("Mean steps per day: ", meanPerDay," steps\n")
+cat("Median steps per day: ", medianPerDay," steps\n")
+```
 
 ## What is the average daily activity pattern?
 
+Group steps by interval and plot time series
 
+```{r}
+groupedByInterval <- aggregate(data$steps, by=list(interval=data$interval), FUN=mean, na.rm=TRUE)
+plot(groupedByInterval$x, xlab="Interval index", ylab="Mean steps", main="Mean steps by 5-minute interval")
+```
+
+The 5-minute interval with maximum number of steps on average is:
+
+```{r}
+intervalMaxAverageSteps = groupedByInterval[which.max(groupedByInterval$x),]$interval
+cat("Interval with max average steps: ", intervalMaxAverageSteps,"\n")
+```
 
 ## Imputing missing values
 
+Fill NA values with the mean for that 5-minute interval
 
+```{r}
+dataComplete <- data
+incompleteIndexes = is.na(data$steps)
+dataComplete$steps[incompleteIndexes] = groupedByInterval[groupedByInterval$interval == dataComplete$interval[incompleteIndexes],]$x
+summary(dataComplete)
+```
+
+Histogram of number of steps per day in the complete dataset
+
+```{r}
+groupedPerDayComplete <- aggregate(dataComplete$steps, by=list(date=data$date), FUN=sum)
+hist(groupedPerDayComplete$x, main="Histogram of steps per day (complete dataset)", xlab="Steps")
+```
+
+Mean and median of the total number of steps per day (complete dataset)
+
+```{r}
+meanPerDayComplete <- mean(groupedPerDayComplete$x, na.rm=TRUE)
+medianPerDayComplete <- median(groupedPerDayComplete$x, na.rm=TRUE)
+cat("Mean steps per day: ", meanPerDayComplete," steps\n")
+cat("Median steps per day: ", medianPerDayComplete," steps\n")
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+Encode week and week-end day in a factor variable
+
+```{r}
+dataComplete$day = factor(as.POSIXlt(dataComplete$date)$wday <= 5, c(TRUE, FALSE),c("weekday","weekend"))
+```
+
+Plot 5-minute interval time series
+
+```{r fig.width = 12}
+par(mfrow=c(1,2))
+dataWeekday = dataComplete[dataComplete$day == "weekday",]
+groupedByIntervalWeekday <- aggregate(dataWeekday$steps, by=list(interval=dataWeekday$interval), FUN=mean, na.rm=TRUE)
+plot(groupedByIntervalWeekday$x, xlab="Interval index", ylab="Mean steps", main="Mean steps by 5-minute interval, weekdays")
+dataWeekend = dataComplete[dataComplete$day == "weekend",]
+groupedByIntervalWeekend <- aggregate(dataWeekend$steps, by=list(interval=dataWeekend$interval), FUN=mean, na.rm=TRUE)
+plot(groupedByIntervalWeekend$x, xlab="Interval index", ylab="Mean steps", main="Mean steps by 5-minute interval, weekend")
+
+```
+
